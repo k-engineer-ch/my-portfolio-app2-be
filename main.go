@@ -35,9 +35,9 @@ func main() {
 	})
 
 	v1 := router.Group("/v1")
-	// v1.GET("/testGet", getting)
+	v1.GET("/testGet", getting)
 	v1.GET("/getAllExpenses", getAllExpenses)
-	// router.POST("/somePost", posting)
+	v1.POST("/addExpense", addExpense)
 	// router.PUT("/somePut", putting)
 	// router.DELETE("/someDelete", deleting)
 	// router.PATCH("/somePatch", patching)
@@ -87,6 +87,35 @@ func getAllExpenses(c *gin.Context) {
 	db.Close()
 }
 
+func addExpense(c *gin.Context) {
+	expense := Expense{}
+	err := c.Bind(&expense)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	db, err := sql.Open("postgres", "postgres://dev_user:system001@localhost:5432/dev1_db?sslmode=disable")
+	checkErr(err)
+	stmt, err := db.Prepare("INSERT INTO expenses(date,amount,category,memo) VALUES($1,$2,$3,$4) RETURNING id")
+	checkErr(err)
+	res, err := stmt.Exec(expense.Date, expense.Amount, expense.Category, expense.Memo)
+	checkErr(err)
+	fmt.Println(res)
+	// 接続切る
+	db.Close()
+
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Server Error")
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status": "ok",
+	})
+}
+
 func db() {
 	db, err := sql.Open("postgres", "postgres://dev_user:system001@localhost:5432/dev1_db?sslmode=disable")
 	// db, err := sql.Open("postgres", "postgres://dev_user:system001@hostname:port/dev1_db user=dev_user password=system001 dbname=dev1_db sslmode=disable")
@@ -98,7 +127,7 @@ func db() {
 	checkErr(err)
 
 	// res, err := stmt.Exec("astaxie", "研究開発部門", "2012-12-09")
-	res, err := stmt.Exec("2012-12-09", 1000, "food", "テスト登録")
+	res, err := stmt.Exec("2012-12-09", 1000, "transportation", "テスト登録-交通費")
 	checkErr(err)
 	fmt.Println(res)
 
@@ -124,20 +153,20 @@ func db() {
 	// rows, err := db.Query("SELECT * FROM userinfo")
 	// rows, err := db.Query("SELECT * FROM expenses")
 	// クエリの実行
-	var id int = 2
-	var date string
-	var amount float64
-	var category string
-	var memo string
-	err = db.QueryRow("SELECT id, date, amount, category, memo FROM expenses WHERE id = $1", id).Scan(&id, &date, &amount, &category, &memo)
-	checkErr(err)
+	// var id int = 2
+	// var date string
+	// var amount float64
+	// var category string
+	// var memo string
+	// err = db.QueryRow("SELECT id, date, amount, category, memo FROM expenses WHERE id = $1", id).Scan(&id, &date, &amount, &category, &memo)
+	// checkErr(err)
 
-	// 結果の表示
-	fmt.Printf("ID: %d\n", id)
-	fmt.Printf("Date: %s\n", date)
-	fmt.Printf("Amount: %f\n", amount)
-	fmt.Printf("Category: %s\n", category)
-	fmt.Printf("Memo: %s\n", memo)
+	// // 結果の表示
+	// fmt.Printf("ID: %d\n", id)
+	// fmt.Printf("Date: %s\n", date)
+	// fmt.Printf("Amount: %f\n", amount)
+	// fmt.Printf("Category: %s\n", category)
+	// fmt.Printf("Memo: %s\n", memo)
 
 	// for rows.Next() {
 	// 	var uid int
@@ -168,17 +197,17 @@ func db() {
 	// 	fmt.Println(created_at)
 	// }
 
-	//データの削除
-	stmt, err = db.Prepare("delete from expenses where id=$1")
-	checkErr(err)
+	// //データの削除
+	// stmt, err = db.Prepare("delete from expenses where id=$1")
+	// checkErr(err)
 
-	res, err = stmt.Exec(2)
-	checkErr(err)
+	// res, err = stmt.Exec(2)
+	// checkErr(err)
 
-	affect, err := res.RowsAffected()
-	checkErr(err)
+	// affect, err := res.RowsAffected()
+	// checkErr(err)
 
-	fmt.Println(affect)
+	// fmt.Println(affect)
 
 	db.Close()
 }
